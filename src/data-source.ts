@@ -9,7 +9,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'user',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'backend_starter_db',
-  entities: [],
+  entities: isTsNode ? ['src/**/*.entity.ts'] : ['dist/**/*.entity.js'],
   migrations: isTsNode
     ? ['src/migrations/**/*.ts']
     : ['dist/migrations/**/*.js'],
