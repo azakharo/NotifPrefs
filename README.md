@@ -1,4 +1,4 @@
-# Minimal backend starter which uses Nest, TypeORM, Postgres
+# Notification Preferences Service
 
 Postgres runs in Docker container.
 The backend runs locally for development.
@@ -38,14 +38,14 @@ $ docker-compose down
 
 ## Other useful npm scripts
 
-* working with migrations: create, generate, show, run, revert
-* ts - run type-checking
-* lint - run eslint + prettier
-* db seed and reset (truncate all tables)
+- working with migrations: create, generate, show, run, revert
+- ts - run type-checking
+- lint - run eslint + prettier
+- db seed and reset (truncate all tables)
 
 ## Configuring project
 
-* Change package name in package.json
-* Configure db access in `src/data-source.ts`
-* Modify `src/database/run-seed.ts` file to fill in the db with test data
-* Change container and db names in  `docker-compose.yml`
+- Change package name in package.json
+- Configure db access in `src/data-source.ts`
+- Modify `src/database/run-seed.ts` file to fill in the db with test data
+- Change container and db names in `docker-compose.yml`
