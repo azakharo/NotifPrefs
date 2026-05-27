@@ -405,12 +405,27 @@ npm run db:seed
 
 Use httpie to test endpoints:
 
+**Bash (Linux/macOS/Git Bash):**
+
 ```bash
 # Get preferences
 http GET http://localhost:3000/users/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/preferences
 
 # Update preferences
 http POST http://localhost:3000/users/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/preferences preferences:='{"marketing":{"email":{"enabled":true}}}'
+
+# Evaluate
+http POST http://localhost:3000/evaluate userId=a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 notifType=marketing channel=email region=EU datetime=2026-05-21T21:30:00Z
+```
+
+**PowerShell (Windows):**
+
+```powershell
+# Get preferences
+http GET http://localhost:3000/users/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/preferences
+
+# Update preferences (pipe JSON to avoid quoting issues)
+echo '{"preferences":{"marketing":{"email":{"enabled":true}}}}' | http POST http://localhost:3000/users/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/preferences
 
 # Evaluate
 http POST http://localhost:3000/evaluate userId=a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 notifType=marketing channel=email region=EU datetime=2026-05-21T21:30:00Z
