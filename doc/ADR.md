@@ -12,32 +12,45 @@ User review is in progress
 
 ### 1. Архитектура приложения
 
-**Domain-Driven Design с модульной структурой:**
+**NestJS модульная структура:**
 
 ```
 src/
-├── domain/                    # Доменный слой
-│   ├── preferences/           # Агрегат Preferences
-│   │   ├── entities/
-│   │   ├── value-objects/
-│   │   ├── services/
-│   │   └── repositories/
-│   ├── policies/              # Глобальные политики
-│   └── shared/                # Общие value objects
-├── application/               # Прикладной слой
-│   ├── use-cases/
-│   ├── dto/
-│   └── services/
-├── infrastructure/            # Инфраструктурный слой
-│   ├── persistence/
-│   │   ├── entities/          # TypeORM entities
-│   │   └── repositories/
-│   └── config/
-└── interfaces/                # Интерфейсный слой
-    └── http/
-        ├── controllers/
-        └── dto/
+├── modules/
+│   └── preferences/           # Модуль предпочтений
+│       ├── preferences.controller.ts
+│       ├── preferences.service.ts
+│       ├── preferences.module.ts
+│       ├── dto/
+│       │   ├── update-preferences.dto.ts
+│       │   ├── evaluate-request.dto.ts
+│       │   └── evaluate-response.dto.ts
+│       ├── entities/
+│       │   └── user-preferences.entity.ts
+│       └── types/
+│           ├── channel.enum.ts
+│           ├── region.enum.ts
+│           ├── notif-type.enum.ts
+│           └── global-policies.ts
+├── common/
+│   ├── types/                 # Общие типы
+│   └── utils/                 # Утилиты
+├── config/
+│   └── configuration.ts
+├── database/
+│   ├── data-source.ts
+│   └── migrations/
+├── app.module.ts
+└── main.ts
 ```
+
+**Почему NestJS модули вместо DDD слоёв:**
+
+- Сервис простой - 3 endpoint'а, 1 агрегат
+- NestJS модули уже обеспечивают разделение ответственности
+- Меньше boilerplate кода
+- Следует конвенциям фреймворка
+- Легче навигация по коду
 
 ### 2. Доменные типы
 
@@ -259,11 +272,12 @@ JSONB используется для гибкости схемы preferences и
 
 ### Positive
 
-- Четкое разделение ответственности между слоями
+- Простая структура - легко понять и поддерживать
+- Следует конвенциям NestJS - любой разработчик разберётся
+- Меньше boilerplate кода
 - Гибкая схема preferences через JSONB
 - Понятные правила приоритизации
 - Idempotent API операции
-- Легко расширяется новыми типами уведомлений
 
 ### Negative
 
@@ -278,18 +292,20 @@ JSONB используется для гибкости схемы preferences и
 
 ## Alternatives Considered
 
-1. **Relational schema для preferences** - отклонено: слишком много таблиц для простых key-value данных
-2. **Global policies в БД** - отклонено: для MVP достаточно hardcoded, упрощает разработку
-3. **Event-sourcing** - отклонено: over-engineering для текущих требований
+1. **Full DDD с разделением на слои** - отклонено: over-engineering для сервиса с 3 endpoint'ами
+2. **Relational schema для preferences** - отклонено: слишком много таблиц для простых key-value данных
+3. **Global policies в БД** - отклонено: для MVP достаточно hardcoded, упрощает разработку
+4. **Event-sourcing** - отклонено: over-engineering для текущих требований
 
 ## Implementation Notes
 
-1. Начать с доменных типов и value objects
-2. Реализовать repository interface и in-memory реализацию для тестов
-3. Создать TypeORM entities и persistence layer
-4. Реализовать use cases
-5. Добавить HTTP controllers с валидацией
-6. Написать тесты
+1. Создать enums: Channel, Region, NotifType
+2. Создать TypeORM entity: UserPreferences
+3. Реализовать PreferencesService с бизнес-логикой
+4. Создать DTOs с валидацией через class-validator
+5. Реализовать PreferencesController
+6. Написать unit-тесты для service
+7. Написать e2e-тесты для controller
 
 ## Related
 
