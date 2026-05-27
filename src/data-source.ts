@@ -1,4 +1,7 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const isTsNode = !!process[Symbol.for('ts-node.register.instance')];
 

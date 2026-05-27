@@ -52,6 +52,7 @@
     "@types/lodash": "4.17.24",
     "@types/node": "22.19.15",
     "@types/supertest": "6.0.3",
+    "dotenv": "17.4.2",
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.5",
