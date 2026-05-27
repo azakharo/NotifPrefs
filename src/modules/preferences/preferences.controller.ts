@@ -24,6 +24,7 @@ export class PreferencesController {
   async getPreferences(
     @Param('userId') userId: string,
   ): Promise<UserPreferencesResponseDto> {
+    // METRIC: COUNTER - increment: http_requests_total{method="GET",endpoint="/users/:userId/preferences"}
     return this.preferencesService.getPreferences(userId);
   }
 
@@ -38,6 +39,7 @@ export class PreferencesController {
     @Param('userId') userId: string,
     @Body() dto: UpdatePreferencesDto,
   ): Promise<UserPreferencesResponseDto> {
+    // METRIC: COUNTER - increment: http_requests_total{method="POST",endpoint="/users/:userId/preferences"}
     return this.preferencesService.updatePreferences(userId, dto);
   }
 
@@ -51,6 +53,7 @@ export class PreferencesController {
   async evaluate(
     @Body() dto: EvaluateRequestDto,
   ): Promise<EvaluateResponseDto> {
+    // METRIC: COUNTER - increment: http_requests_total{method="POST",endpoint="/evaluate"}
     return this.preferencesService.evaluate(dto);
   }
 }

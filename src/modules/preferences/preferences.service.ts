@@ -106,6 +106,7 @@ export class PreferencesService {
       dto.region,
     );
     if (globalPolicy?.blocked) {
+      // METRIC: COUNTER - increment: evaluate_decision_total{decision="deny",reason="blocked_by_global_policy"}
       const reason = 'blocked_by_global_policy';
       this.logger.log(
         `Decision: deny for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}, reason=${reason}`,
@@ -114,6 +115,7 @@ export class PreferencesService {
     }
 
     const preferences = await this.getPreferences(dto.userId);
+
     if (
       !this.isChannelEnabled(
         preferences.preferences,
@@ -121,6 +123,7 @@ export class PreferencesService {
         dto.channel,
       )
     ) {
+      // METRIC: COUNTER - increment: evaluate_decision_total{decision="deny",reason="disabled_by_user"}
       const reason = 'disabled_by_user';
       this.logger.log(
         `Decision: deny for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}, reason=${reason}`,
@@ -134,6 +137,7 @@ export class PreferencesService {
         this.isInQuietHours(preferences.quietHours, datetime) &&
         BLOCKED_IN_QUIET_HOURS[dto.notifType]
       ) {
+        // METRIC: COUNTER - increment: evaluate_decision_total{decision="deny",reason="blocked_by_quiet_hours"}
         const reason = 'blocked_by_quiet_hours';
         this.logger.log(
           `Decision: deny for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}, reason=${reason}`,
@@ -142,6 +146,7 @@ export class PreferencesService {
       }
     }
 
+    // METRIC: COUNTER - increment: evaluate_decision_total{decision="allow"}
     this.logger.log(
       `Decision: allow for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}`,
     );
