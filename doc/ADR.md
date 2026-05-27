@@ -2,7 +2,7 @@
 
 ## Status
 
-User review is in progress
+Approved!
 
 ## Context
 
@@ -112,9 +112,10 @@ src/
 
 1. **Global Policy** - если глобальная политика запрещает → `deny`
 2. **User Preference** - если пользователь отключил → `deny`
-3. **Default Preference** - если дефолт выключен → `deny`
-4. **Quiet Hours** - если в quiet hours и `blockedInQuietHours` = true для NotifType → `deny`
-5. Иначе → `allow`
+3. **Quiet Hours** - если в quiet hours и `blockedInQuietHours` = true для NotifType → `deny`
+4. Иначе → `allow`
+
+> Примечание: Default preferences не проверяются отдельно, так как они присваиваются пользователю при создании и становятся его user preferences.
 
 **Таблица решений:**
 
@@ -179,7 +180,7 @@ const GLOBAL_POLICIES = [
 
 2. `POST /users/:userId/preferences`
    - Body: UpdatePreferencesRequest
-   - Поддержка idempotency через idempotency key
+   - Идемпотентность через сравнение текущего и запрошенного состояния
 
 3. `POST /evaluate`
    - Body: EvaluateRequest
@@ -222,12 +223,23 @@ const GLOBAL_POLICIES = [
 
 ### 7. Idempotency
 
-Реализация идемпотентности:
+Реализация идемпотентности без idempotency key:
 
-- PATCH-семантика для обновления настроек
+- POST с body, содержащим только изменяемые поля
 - Текущее состояние сравнивается с запрошенным
 - Если состояние уже соответствует запросу → no-op, возврат 200 OK
-- Использование optimistic locking через version field (опционально)
+- Результат одинаковый при повторных запросах
+
+Пример:
+
+```typescript
+// Запрос: отключить marketing_email
+POST /users/123/preferences
+{ "preferences": { "marketing": { "email": { "enabled": false } } } }
+
+// Если уже disabled → возвращаем 200 OK без изменений
+// Если enabled → обновляем и возвращаем 200 OK
+```
 
 ### 8. База данных
 
@@ -251,7 +263,7 @@ JSONB используется для гибкости схемы preferences и
 ### 9. Обработка таймзон
 
 - Использование IANA timezone identifiers (Europe/Moscow, America/New_York)
-- Библиотека: `date-fns-tz` или `luxon`
+- Библиотека: `date-fns-tz`
 - Конвертация времени quiet hours в UTC для сравнения
 
 ### 10. Observability
@@ -260,7 +272,6 @@ JSONB используется для гибкости схемы preferences и
 
 - Structured logging (JSON format)
 - Логирование: изменения настроек, решения allow/deny
-- Correlation IDs для трассировки запросов
 
 **Metrics (подготовка):**
 
@@ -282,8 +293,8 @@ JSONB используется для гибкости схемы preferences и
 ### Negative
 
 - JSONB не валидируется на уровне БД (нужна валидация в коде)
-- Hardcoded политики менее гибкие чем БД-решение
-- Нет UI для администрирования политик
+- Hardcoded политики менее гибкие чем БД-решение (можно улучшить в дальнейшем)
+- Нет API и UI для администрирования политик
 
 ### Risks
 
@@ -310,3 +321,9 @@ JSONB используется для гибкости схемы preferences и
 ## Related
 
 - [PRD](./PRD.txt)
+
+## Возможные улучшения в будущем
+
+- Управление глобальными политиками (API, UI)
+- Управление default user preferences (API, UI)
+- Расширение возможностей по настройке quiet hours - чтобы можно было настраивать по каналам связи (если это нужно бизнесу)
