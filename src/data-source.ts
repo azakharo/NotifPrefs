@@ -18,7 +18,7 @@ export const dataSourceOptions: DataSourceOptions = {
     : ['dist/migrations/**/*.js'],
   migrationsTableName: 'migrations',
   synchronize: false,
-  logging: ['query', 'error'],
+  logging: ['error'],
   migrationsRun: false,
 };
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { merge } from 'lodash';
@@ -21,6 +21,8 @@ import { toZonedTime } from 'date-fns-tz';
 
 @Injectable()
 export class PreferencesService {
+  private readonly logger = new Logger(PreferencesService.name);
+
   constructor(
     @InjectRepository(UserPreferences)
     private readonly preferencesRepository: Repository<UserPreferences>,
@@ -85,6 +87,7 @@ export class PreferencesService {
       preferences.preferences = mergedPreferences;
       preferences.quietHours = mergedQuietHours;
       await this.preferencesRepository.save(preferences);
+      this.logger.log(`Preferences updated for user: ${userId}`);
     }
 
     return {
@@ -103,7 +106,11 @@ export class PreferencesService {
       dto.region,
     );
     if (globalPolicy?.blocked) {
-      return { decision: 'deny', reason: 'blocked_by_global_policy' };
+      const reason = 'blocked_by_global_policy';
+      this.logger.log(
+        `Decision: deny for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}, reason=${reason}`,
+      );
+      return { decision: 'deny', reason };
     }
 
     const preferences = await this.getPreferences(dto.userId);
@@ -114,7 +121,11 @@ export class PreferencesService {
         dto.channel,
       )
     ) {
-      return { decision: 'deny', reason: 'disabled_by_user' };
+      const reason = 'disabled_by_user';
+      this.logger.log(
+        `Decision: deny for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}, reason=${reason}`,
+      );
+      return { decision: 'deny', reason };
     }
 
     if (preferences.quietHours) {
@@ -123,10 +134,17 @@ export class PreferencesService {
         this.isInQuietHours(preferences.quietHours, datetime) &&
         BLOCKED_IN_QUIET_HOURS[dto.notifType]
       ) {
-        return { decision: 'deny', reason: 'blocked_by_quiet_hours' };
+        const reason = 'blocked_by_quiet_hours';
+        this.logger.log(
+          `Decision: deny for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}, reason=${reason}`,
+        );
+        return { decision: 'deny', reason };
       }
     }
 
+    this.logger.log(
+      `Decision: allow for user=${dto.userId}, type=${dto.notifType}, channel=${dto.channel}`,
+    );
     return { decision: 'allow' };
   }
 
