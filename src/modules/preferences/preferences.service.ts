@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { merge } from 'lodash';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UserPreferencesData } from './types/user-preferences.interface';
 import { QuietHours } from './types/quiet-hours.type';
@@ -64,24 +65,25 @@ export class PreferencesService {
       });
     }
 
-    const currentPreferences = JSON.stringify({
+    const mergedPreferences: UserPreferencesData = dto.preferences
+      ? merge({}, preferences.preferences, dto.preferences)
+      : preferences.preferences;
+
+    const mergedQuietHours =
+      dto.quietHours !== undefined ? dto.quietHours : preferences.quietHours;
+
+    const currentStr = JSON.stringify({
       preferences: preferences.preferences,
       quietHours: preferences.quietHours,
     });
-
-    const newPreferences = JSON.stringify({
-      preferences: dto.preferences ?? preferences.preferences,
-      quietHours:
-        dto.quietHours !== undefined ? dto.quietHours : preferences.quietHours,
+    const newStr = JSON.stringify({
+      preferences: mergedPreferences,
+      quietHours: mergedQuietHours,
     });
 
-    if (currentPreferences !== newPreferences) {
-      if (dto.preferences !== undefined) {
-        preferences.preferences = dto.preferences;
-      }
-      if (dto.quietHours !== undefined) {
-        preferences.quietHours = dto.quietHours;
-      }
+    if (currentStr !== newStr) {
+      preferences.preferences = mergedPreferences;
+      preferences.quietHours = mergedQuietHours;
       await this.preferencesRepository.save(preferences);
     }
 
