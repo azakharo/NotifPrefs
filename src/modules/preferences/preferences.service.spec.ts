@@ -404,6 +404,33 @@ describe('PreferencesService', () => {
       const resultEvening = service.isInQuietHours(quietHours, evening);
       expect(resultEvening).toBe(false);
     });
+
+    it('should handle timezone conversion correctly', () => {
+      const quietHours = {
+        startTime: '22:00',
+        endTime: '08:00',
+        timezone: 'Europe/Moscow',
+      };
+
+      // UTC 19:00 = Moscow 22:00 (start of quiet hours)
+      const utcBeforeQuietHours = new Date('2024-01-01T18:59:00Z');
+      expect(service.isInQuietHours(quietHours, utcBeforeQuietHours)).toBe(
+        false,
+      );
+
+      const utcStartQuietHours = new Date('2024-01-01T19:00:00Z');
+      expect(service.isInQuietHours(quietHours, utcStartQuietHours)).toBe(true);
+
+      // UTC 05:00 = Moscow 08:00 (end of quiet hours, should be false)
+      const utcEndQuietHours = new Date('2024-01-01T05:00:00Z');
+      expect(service.isInQuietHours(quietHours, utcEndQuietHours)).toBe(false);
+
+      // UTC 03:00 = Moscow 06:00 (middle of quiet hours)
+      const utcMiddleQuietHours = new Date('2024-01-01T03:00:00Z');
+      expect(service.isInQuietHours(quietHours, utcMiddleQuietHours)).toBe(
+        true,
+      );
+    });
   });
 
   describe('findGlobalPolicy', () => {
@@ -447,6 +474,42 @@ describe('PreferencesService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
+      const result = await service.evaluate({
+        userId: TEST_USER_ID,
+        notifType: NotifType.MARKETING,
+        channel: Channel.SMS,
+        region: Region.EU,
+        datetime: new Date().toISOString(),
+      });
+
+      expect(result.decision).toBe('deny');
+      expect(result.reason).toBe('blocked_by_global_policy');
+    });
+
+    it('should return deny with blocked_by_global_policy when global policy blocks despite user having channel enabled', async () => {
+      const existingPrefs = {
+        userId: TEST_USER_ID,
+        preferences: {
+          transactional: {
+            email: { enabled: true },
+            sms: { enabled: true },
+            push: { enabled: true },
+            messenger: { enabled: true },
+          },
+          marketing: {
+            email: { enabled: true },
+            sms: { enabled: true },
+            push: { enabled: true },
+            messenger: { enabled: true },
+          },
+        },
+        quietHours: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      repository.findOne.mockResolvedValue(existingPrefs);
 
       const result = await service.evaluate({
         userId: TEST_USER_ID,
