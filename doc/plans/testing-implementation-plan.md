@@ -2,15 +2,15 @@
 
 ## Overview
 
-This plan covers implementation of tests for Notification Preferences Service based on PRD requirements.
+This plan covers implementation of unit tests for Notification Preferences Service based on PRD requirements.
 
-## Test Categories
+**Decision:** E2E tests removed. Business logic concentrated in PreferencesService. Unit tests with mocked repository sufficient for coverage.
 
-### 1. Unit Tests - PreferencesService
+## Unit Tests - PreferencesService
 
 Location: `src/modules/preferences/preferences.service.spec.ts`
 
-#### 1.1 Default Preferences for New User
+### 1.1 Default Preferences for New User
 
 Test cases:
 
@@ -18,7 +18,7 @@ Test cases:
 - Default preferences match `DEFAULT_PREFERENCES` constant
 - Returns correct DTO structure with userId, preferences, quietHours, timestamps
 
-#### 1.2 User Preference Changes
+### 1.2 User Preference Changes
 
 Test cases:
 
@@ -28,7 +28,7 @@ Test cases:
 - `updatePreferences` clears quietHours when null provided
 - Returns updated preferences in response
 
-#### 1.3 Quiet Hours Influence
+### 1.3 Quiet Hours Influence
 
 Test cases:
 
@@ -39,7 +39,7 @@ Test cases:
 - `evaluate` returns deny with reason blocked_by_quiet_hours when marketing notification during quiet hours
 - `evaluate` returns allow for transactional during quiet hours
 
-#### 1.4 Global Policies Influence
+### 1.4 Global Policies Influence
 
 Test cases:
 
@@ -48,7 +48,7 @@ Test cases:
 - `evaluate` returns deny with reason blocked_by_global_policy when global policy blocks
 - Global policy takes priority over user preferences
 
-#### 1.5 Idempotency
+### 1.5 Idempotency
 
 Test cases:
 
@@ -58,72 +58,9 @@ Test cases:
 
 ---
 
-### 2. E2E Tests - API Endpoints
+## Test Fixtures
 
-Location: `test/preferences.e2e-spec.ts`
-
-#### 2.1 GET /users/:userId/preferences
-
-Test cases:
-
-- Returns 200 with user preferences for existing user
-- Returns 200 with default preferences for new user
-- Returns correct DTO structure
-
-#### 2.2 POST /users/:userId/preferences
-
-Test cases:
-
-- Returns 200 with updated preferences
-- Updates specific channel preference
-- Updates quiet hours settings
-- Clears quiet hours when null sent
-- Idempotent - same request twice returns same result
-
-#### 2.3 POST /evaluate
-
-Test cases:
-
-- Returns allow when all conditions pass
-- Returns deny with blocked_by_global_policy reason
-- Returns deny with disabled_by_user reason
-- Returns deny with blocked_by_quiet_hours reason
-- Handles timezone correctly in datetime evaluation
-
----
-
-## Test Infrastructure
-
-### Database Setup for E2E Tests
-
-Options:
-
-1. **In-memory SQLite** - Fast, isolated, but different from production PostgreSQL
-2. **Test PostgreSQL container** - Same as production, but slower setup
-3. **Mock repository** - Fast, but less integration coverage
-
-Recommendation: Use **test PostgreSQL** with separate test database for E2E tests to match production behavior.
-
-### Test Configuration
-
-Create: `test/jest-e2e.json` update or `test/test-setup.ts`
-
-```json
-{
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
-  "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
-  "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  },
-  "setupFilesAfterEnv": ["./test-setup.ts"]
-}
-```
-
-### Test Fixtures
-
-Create: `test/fixtures/preferences.fixture.ts`
+Location: `src/modules/preferences/preferences.service.spec.ts` (inline) or separate fixtures file
 
 ```typescript
 // Valid UUIDs for testing
@@ -162,7 +99,7 @@ export const SAMPLE_QUIET_HOURS = {
 
 ```typescript
 // Given: User does not exist in database
-// When: GET /users/:userId/preferences called
+// When: getPreferences called
 // Then: Returns default preferences, creates record in DB
 ```
 
@@ -170,7 +107,7 @@ export const SAMPLE_QUIET_HOURS = {
 
 ```typescript
 // Given: User exists with default preferences
-// When: POST /users/:userId/preferences with { preferences: { marketing: { email: { enabled: false } } } }
+// When: updatePreferences with { preferences: { marketing: { email: { enabled: false } } } }
 // Then: Marketing email disabled, transactional unchanged
 ```
 
@@ -178,7 +115,7 @@ export const SAMPLE_QUIET_HOURS = {
 
 ```typescript
 // Given: User has quiet hours 22:00-08:00 Europe/Moscow
-// When: POST /evaluate with { notifType: 'marketing', channel: 'push', datetime: '2026-05-21T23:00:00Z' }
+// When: evaluate with { notifType: 'marketing', channel: 'push', datetime: '2026-05-21T23:00:00Z' }
 // Then: Returns { decision: 'deny', reason: 'blocked_by_quiet_hours' }
 ```
 
@@ -186,7 +123,7 @@ export const SAMPLE_QUIET_HOURS = {
 
 ```typescript
 // Given: Global policy blocks marketing SMS in EU
-// When: POST /evaluate with { notifType: 'marketing', channel: 'sms', region: 'EU' }
+// When: evaluate with { notifType: 'marketing', channel: 'sms', region: 'EU' }
 // Then: Returns { decision: 'deny', reason: 'blocked_by_global_policy' }
 ```
 
@@ -194,19 +131,18 @@ export const SAMPLE_QUIET_HOURS = {
 
 ```typescript
 // Given: User has marketing email disabled
-// When: POST /users/:userId/preferences with { preferences: { marketing: { email: { enabled: false } } } }
-// Then: No database write, returns 200 with current state
+// When: updatePreferences with { preferences: { marketing: { email: { enabled: false } } } }
+// Then: No database write, returns current state
 ```
 
 ---
 
 ## Implementation Order
 
-1. Create test fixtures file
-2. Implement unit tests for PreferencesService
-3. Setup test database configuration for E2E
-4. Implement E2E tests for API endpoints
-5. Run all tests and verify coverage
+1. Create test fixtures inline or in separate file
+2. Setup mock repository and module
+3. Implement tests for each category
+4. Run tests and verify coverage
 
 ---
 
@@ -219,8 +155,8 @@ npm run test
 # Run unit tests with coverage
 npm run test:cov
 
-# Run E2E tests
-npm run test:e2e
+# Run unit tests in watch mode
+npm run test:watch
 ```
 
 ---
@@ -233,44 +169,6 @@ Target coverage for PreferencesService:
 - Branches: 85%+
 - Functions: 90%+
 - Lines: 90%+
-
----
-
-## Mermaid Diagram: Test Flow
-
-```mermaid
-flowchart TD
-    A[Test Start] --> B{Test Type}
-    B --> C[Unit Tests]
-    B --> D[E2E Tests]
-
-    C --> C1[Service Methods]
-    C1 --> C2[Default Preferences]
-    C1 --> C3[Update Preferences]
-    C1 --> C4[Quiet Hours Logic]
-    C1 --> C5[Global Policies]
-    C1 --> C6[Idempotency]
-
-    D --> D1[API Endpoints]
-    D1 --> D2[GET /users/:id/preferences]
-    D1 --> D3[POST /users/:id/preferences]
-    D1 --> D4[POST /evaluate]
-
-    C2 --> E[Mock Repository]
-    C3 --> E
-    C4 --> E
-    C5 --> E
-    C6 --> E
-
-    D2 --> F[Test Database]
-    D3 --> F
-    D4 --> F
-
-    E --> G[Assertions]
-    F --> G
-
-    G --> H[Test Complete]
-```
 
 ---
 
@@ -301,18 +199,15 @@ flowchart TD
 
 ## Files to Create
 
-| File                                                  | Purpose                  |
-| ----------------------------------------------------- | ------------------------ |
-| `src/modules/preferences/preferences.service.spec.ts` | Unit tests for service   |
-| `test/preferences.e2e-spec.ts`                        | E2E tests for API        |
-| `test/fixtures/preferences.fixture.ts`                | Test data fixtures       |
-| `test/test-setup.ts`                                  | Test configuration setup |
+| File                                                  | Purpose                |
+| ----------------------------------------------------- | ---------------------- |
+| `src/modules/preferences/preferences.service.spec.ts` | Unit tests for service |
 
 ---
 
 ## Notes
 
-- Use valid RFC 4122 UUIDs in test fixtures per testing_rules.md
-- Use date-fns for date operations per react_rules.md
+- Use valid RFC 4122 UUIDs in test fixtures
+- Use date-fns for date operations
 - Mock Logger in unit tests to avoid console noise
-- Clean database between E2E tests for isolation
+- Mock Repository to isolate service logic
